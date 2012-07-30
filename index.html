@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta name="viewport" content="initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <title>Street View Calendar</title>
+  <meta name="description" content=""/>
+  <meta name="keywords" content="Google Street View,Calendar,ストリートビュー,カレンダー"/>
+  <link rel="stylesheet" href="css/bootstrap.min.css" type="text.css" >
+  <link rel="stylesheet" href="css/style.css" type="text.css" >
+  <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+  <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+</head>
+<body>
+<div id="wrapper">
+  <div class="container">
+    <header>
+      <h1>Street View Calendar</h1>
+      <p class="lead">A gallery of Google Street View @Yokohama</p>
+      <div class="subnav">
+        <ul id="nav-spot" class="nav nav-pills">
+          <li class="active"><a href="javascript:void(0);">Scene 1</a></li>
+          <li><a href="javascript:void(0);">Scene 2</a></li>
+          <li><a href="javascript:void(0);">Scene 3</a></li>
+          <li><a href="javascript:void(0);">Scene 4</a></li>
+        </ul>
+      </div>
+    </header>
+    <section id="gallery" class="content">
+      <div class="gallery-container">
+        <div id="map-canvas"></div>
+        <div id="map-sv-canvas"></div>
+      </div>
+      <div class="gallery-container">
+        <div class="map-fake"></div>
+      </div>
+      <div class="gallery-container">
+        <div class="map-fake"></div>
+      </div>
+    </section>
+  </div>
+</div>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script>
+<script src="//maps.google.com/maps/api/js?sensor=false"></script>
+<script>
+  window.requestAnimationFrame = (function() {
+    return window.requestAnimationFrame||
+      window.webkitRequestAnimationFrame||
+      window.mozRequestAnimationFrame||
+      window.oRequestAnimationFrame||
+      window.msRequestAnimationFrame||
+      function(callback, element) {
+        window.setTimeout(callback, 1000 / 60);
+      };
+  })();
+
+  var _gStreet = {};
+  _gStreet.spots = [
+    {
+      lat: 35.451854,
+      lng: 139.647816
+    },
+    {
+      lat: 35.452594,
+      lng: 139.643788
+    },
+    {
+      lat: 35.455862,
+      lng: 139.640692
+    },
+    {
+      lat: 35.453637,
+      lng: 139.630985
+    }
+  ];
+  _gStreet.RandomLatLng = function() {
+    var spot = _gStreet.spots[Math.floor(Math.random() * _gStreet.spots.length)];
+    return (new google.maps.LatLng(spot.lat, spot.lng))
+  };
+  _gStreet.getLatLng = function(index) {
+    var spot = _gStreet.spots[index];
+    return (new google.maps.LatLng(spot.lat, spot.lng));
+  };
+  _gStreet.setLatLng = function(index) {
+    var p = _gStreet.getLatLng(index);
+    _gStreet.map.setCenter(p);
+    _gStreet.pin.setPosition(p);
+    _gStreet.panorama.setPosition(p);
+  };
+
+  $(function() {
+    var index = 0;
+    $("#nav-spot li a").each(function() {
+      $(this).data('index-number', index);
+      $(this).on('click', function() {
+        $(".active").removeClass('active');
+        $(this).parent().addClass('active');
+        var html = '<div class="gallery-container drop-down"><div class="map-fake"></\div></\div>';
+        $("#gallery").prepend(html);
+        setTimeout(function() {$(".gallery-container:first").remove();}, 800)
+        _gStreet.setLatLng($(this).data('index-number'));
+      });
+      index++;
+    });
+    _gStreet.mapCanvas = document.getElementById("map-canvas");
+    _gStreet.mapPanoramaCanvas = document.getElementById("map-sv-canvas");
+    _gStreet.latLng = _gStreet.getLatLng(0);
+    _gStreet.gMapOptions = {
+      zoom: 15,
+      center: _gStreet.latLng,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+    _gStreet.gPanoramaOptions = {
+      position: _gStreet.latLng,
+      pov: {
+        heading: 0,
+        pitch: 10,
+        zoom: 0
+      }
+    };
+    _gStreet.map = new google.maps.Map(_gStreet.mapCanvas, _gStreet.gMapOptions);
+
+    _gStreet.pin = new google.maps.Marker({
+      position: _gStreet.latLng,
+      map: _gStreet.map
+    });
+
+    _gStreet.panorama = new google.maps.StreetViewPanorama(_gStreet.mapPanoramaCanvas, _gStreet.gPanoramaOptions);
+    _gStreet.rotatePanorama = function() {
+      var h = _gStreet.panorama.pov.heading;
+      h += 0.1;
+      if (h >= 360) h = 0;
+      var p = {
+        heading: h,
+        pitch: _gStreet.panorama.pov.pitch,
+        zoom: _gStreet.panorama.pov.zoom
+      };
+      _gStreet.panorama.setPov(p);
+      requestAnimationFrame(_gStreet.rotatePanorama);
+    };
+    _gStreet.rotatePanorama();
+  });
+</script>
+</body>
+</html>
